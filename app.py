@@ -1,6 +1,6 @@
 """
 app.py - FaceSorter Dashboard
-Pic-Time inspired design with face thumbnail previews.
+Pic-Time inspired design with circular face thumbnails and ring borders.
 Run with: python3 -m streamlit run app.py
 """
 
@@ -105,44 +105,59 @@ html, body, [class*="css"], .stApp {
 
 .section-card {
     background: #FFFFFF; border: 1px solid #E8E4DC;
-    border-radius: 12px; padding: 20px 22px; margin-bottom: 16px;
+    border-radius: 12px; padding: 24px 22px; margin-bottom: 16px;
 }
 .section-card-title {
     font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-    color: #A09880; margin: 0 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid #EDE9E1;
+    color: #A09880; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 1px solid #EDE9E1;
 }
 
+/* ── Pic-Time style person grid ── */
 .person-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 24px;
     margin-top: 4px;
 }
 .person-card {
-    background: #FAF8F4; border: 1px solid #E8E4DC;
-    border-radius: 12px; overflow: hidden;
-    display: flex; flex-direction: column; align-items: center;
-    padding: 16px 12px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    padding: 8px 0;
 }
-.person-card:hover { border-color: #C4A882; }
-.person-thumb {
-    width: 90px; height: 90px;
-    object-fit: cover; display: block;
-    background: #EDE9E1;
+.person-ring {
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
-    margin-bottom: 10px;
+    border: 2.5px solid #C8BBA8;
+    padding: 4px;
+    background: #FFFFFF;
+    flex-shrink: 0;
+}
+.person-thumb {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    background: #EDE9E1;
 }
 .person-placeholder {
-    width: 90px; height: 90px;
-    background: #EDE9E1;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 32px;
-    margin-bottom: 10px;
+    background: #EDE9E1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
 }
 .person-name {
-    font-size: 11px; color: #3A3530; font-weight: 500;
-    margin: 0 0 5px 0; text-align: center;
+    font-size: 12px; color: #3A3530; font-weight: 500;
+    text-align: center; line-height: 1.3;
 }
 .person-badge {
     font-size: 10px; color: #8A7860; font-weight: 600;
@@ -201,10 +216,12 @@ def make_person_card(folder_info):
     b64 = thumbnail_to_b64(thumb_path) if thumb_path else None
 
     card = '<div class="person-card">'
+    card += '<div class="person-ring">'
     if b64:
         card += '<img class="person-thumb" src="data:image/jpeg;base64,' + b64 + '" alt="' + name + '">'
     else:
         card += '<div class="person-placeholder">👤</div>'
+    card += '</div>'
     card += '<div class="person-name">' + name + "</div>"
     card += '<div class="person-badge">' + label + "</div>"
     card += "</div>"
@@ -282,7 +299,7 @@ def render_results(r):
         cards_html += make_person_card(folder_info)
     if len(r["person_folders"]) > 60:
         extra = len(r["person_folders"]) - 60
-        cards_html += '<div class="person-card" style="justify-content:center;padding:16px;"><span style="color:#A09880;font-size:12px;">+' + str(extra) + ' more</span></div>'
+        cards_html += '<div class="person-card"><div class="person-ring" style="background:#F5F0E8;display:flex;align-items:center;justify-content:center;"><span style="color:#A09880;font-size:12px;text-align:center;">+' + str(extra) + ' more</span></div></div>'
     cards_html += "</div></div>"
     st.markdown(cards_html, unsafe_allow_html=True)
 
