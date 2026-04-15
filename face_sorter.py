@@ -28,10 +28,10 @@ DEFAULT_CONFIG = {
     'dbscan_min_samples':   2,
 }
 
-THUMBNAIL_SIZE = 160
+THUMBNAIL_SIZE = 400
 
 
-def load_image(path: Path):
+def load_image(path):
     try:
         pil_img = PILImage.open(path).convert('RGB')
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
@@ -39,7 +39,7 @@ def load_image(path: Path):
         return None
 
 
-def get_face_sharpness(image, bbox) -> float:
+def get_face_sharpness(image, bbox):
     x1, y1, x2, y2 = [int(v) for v in bbox]
     x1, y1 = max(0, x1), max(0, y1)
     x2, y2 = min(image.shape[1], x2), min(image.shape[0], y2)
@@ -64,25 +64,15 @@ def should_keep_face(face, image_width, image_height, sharpness, cfg):
     return True, 'ok'
 
 
-def face_quality_score(face_entry: dict) -> float:
-    """
-    Score a face entry for thumbnail selection.
-    Rewards sharpness and confidence, penalises head rotation.
-    Higher = better thumbnail candidate.
-    """
+def face_quality_score(face_entry):
     score = face_entry['sharpness'] * 0.4
     score += face_entry['det_score'] * 120
-    score -= abs(face_entry.get('yaw',   0)) * 0.4
+    score -= abs(face_entry.get('yaw', 0)) * 0.4
     score -= abs(face_entry.get('pitch', 0)) * 0.4
     return score
 
 
-def generate_thumbnail(img_path: str, bbox: list, output_path: Path) -> bool:
-    """
-    Crop the face region with generous padding, make it square,
-    resize to THUMBNAIL_SIZE, and save as JPEG.
-    Returns True on success.
-    """
+def generate_thumbnail(img_path, bbox, output_path):
     img = load_image(Path(img_path))
     if img is None:
         return False
@@ -110,27 +100,19 @@ def generate_thumbnail(img_path: str, bbox: list, output_path: Path) -> bool:
 
     thumb = cv2.resize(canvas, (THUMBNAIL_SIZE, THUMBNAIL_SIZE), interpolation=cv2.INTER_LANCZOS4)
     pil_thumb = PILImage.fromarray(cv2.cvtColor(thumb, cv2.COLOR_BGR2RGB))
-    pil_thumb.save(str(output_path), 'JPEG', quality=88)
+    pil_thumb.save(str(output_path), 'JPEG', quality=97)
     return True
 
 
-def collect_image_paths(folder: Path):
+def collect_image_paths(folder):
     paths = []
     for ext in SUPPORTED_EXTENSIONS:
-        paths.extend(folder.rglob(f'*{ext}'))
-        paths.extend(folder.rglob(f'*{ext.upper()}'))
+        paths.extend(folder.rglob('*' + ext))
+        paths.extend(folder.rglob('*' + ext.upper()))
     return sorted(set(paths))
 
 
-def run_sort(config: dict, step_cb=None) -> dict:
-    """
-    Run the full face sorting pipeline.
-
-    step_cb(phase, current, total, message) is called throughout.
-    Phases: 'init' | 'scan' | 'cluster' | 'write' | 'done'
-
-    Returns a results dict on success, raises Exception on failure.
-    """
+def run_sort(config, step_cb=None):
     cfg = {**DEFAULT_CONFIG, **config}
 
     def cb(phase, current, total, msg):
@@ -141,30 +123,30 @@ def run_sort(config: dict, step_cb=None) -> dict:
     output_path = Path(cfg['output_folder'])
 
     if not input_path.exists():
-        raise FileNotFoundError(f"Input folder not found: {input_path}")
+        raise FileNotFoundError('Input folder not found: ' + str(input_path))
 
     image_paths = collect_image_paths(input_path)
     if not image_paths:
-        raise ValueError(f"No supported images found in: {input_path}")
+        raise ValueError('No supported images found in: ' + str(input_path))
 
-    cb('init', 0, 1, f'Found {len(image_paths)} photos — loading AI model...')
+    cb('init', 0, 1, 'Found ' + str(len(image_paths)) + ' photos - loading AI model...')
 
     try:
         from insightface.app import FaceAnalysis
     except ImportError:
-        raise ImportError("InsightFace not installed. Run: pip install insightface onnxruntime")
+        raise ImportError('InsightFace not installed. Run: pip install insightface onnxruntime')
 
     app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider'])
     app.prepare(ctx_id=0, det_size=(640, 640))
 
     cb('scan', 0, len(image_paths), 'Starting face detection...')
 
-    face_data      = []
-    skip_counts    = {'size': 0, 'confidence': 0, 'blur': 0, 'angle': 0}
+    face_data = []
+    skip_counts = {'size': 0, 'confidence': 0, 'blur': 0, 'angle': 0}
     total_detected = 0
 
     for i, img_path in enumerate(image_paths):
-        cb('scan', i + 1, len(image_paths), f'Scanning {img_path.name}')
+        cb('scan', i + 1, len(image_paths), 'Scanning ' + img_path.name)
         img = load_image(img_path)
         if img is None:
             continue
@@ -182,11 +164,9 @@ def run_sort(config: dict, step_cb=None) -> dict:
                 continue
             if face.embedding is None:
                 continue
-
             yaw, pitch = 0.0, 0.0
             if hasattr(face, 'pose') and face.pose is not None:
                 yaw, pitch = float(face.pose[0]), float(face.pose[1])
-
             face_data.append({
                 'embedding':  face.embedding,
                 'image_path': str(img_path),
@@ -198,11 +178,9 @@ def run_sort(config: dict, step_cb=None) -> dict:
             })
 
     if not face_data:
-        raise ValueError(
-            "No faces passed the filters. Try lowering Min Face Size or Min Sharpness."
-        )
+        raise ValueError('No faces passed the filters. Try lowering Min Face Size or Min Sharpness.')
 
-    cb('cluster', 0, 1, f'Clustering {len(face_data)} faces into people...')
+    cb('cluster', 0, 1, 'Clustering ' + str(len(face_data)) + ' faces into people...')
 
     embeddings = normalize(np.array([d['embedding'] for d in face_data]))
     labels = DBSCAN(
@@ -213,16 +191,16 @@ def run_sort(config: dict, step_cb=None) -> dict:
     ).fit_predict(embeddings)
 
     unique_people = set(l for l in labels if l != -1)
-    noise_count   = int((labels == -1).sum())
+    noise_count = int((labels == -1).sum())
 
-    cb('cluster', 1, 1, f'Found {len(unique_people)} unique people')
+    cb('cluster', 1, 1, 'Found ' + str(len(unique_people)) + ' unique people')
 
     output_path.mkdir(parents=True, exist_ok=True)
     unmatched_path = output_path / 'unmatched'
     unmatched_path.mkdir(exist_ok=True)
 
-    person_photos:  dict[int, set]  = {}
-    person_faces:   dict[int, list] = {}
+    person_photos = {}
+    person_faces = {}
 
     for i, label in enumerate(labels):
         img_path = face_data[i]['image_path']
@@ -234,13 +212,13 @@ def run_sort(config: dict, step_cb=None) -> dict:
             person_photos.setdefault(label, set()).add(img_path)
             person_faces.setdefault(label, []).append(face_data[i])
 
-    sorted_people  = sorted(person_photos.items(), key=lambda x: len(x[1]), reverse=True)
+    sorted_people = sorted(person_photos.items(), key=lambda x: len(x[1]), reverse=True)
     total_to_write = sum(len(p) for _, p in sorted_people)
-    written        = 0
+    written = 0
     person_folders = []
 
     for rank, (label, photos) in enumerate(sorted_people, start=1):
-        folder_name   = f'person-{rank:03d}'
+        folder_name = 'person-' + str(rank).zfill(3)
         person_folder = output_path / folder_name
         person_folder.mkdir(exist_ok=True)
 
@@ -249,7 +227,7 @@ def run_sort(config: dict, step_cb=None) -> dict:
             if not dest.exists():
                 shutil.copy2(img_path, dest)
             written += 1
-            cb('write', written, total_to_write, f'Writing {folder_name}...')
+            cb('write', written, total_to_write, 'Writing ' + folder_name + '...')
 
         thumb_path = person_folder / 'thumbnail.jpg'
         thumb_generated = False
@@ -285,22 +263,22 @@ def run_sort(config: dict, step_cb=None) -> dict:
 
 
 if __name__ == '__main__':
-    print('\n📸  FaceSorter — CLI Mode')
-    print('─' * 40)
+    print('\n📸  FaceSorter - CLI Mode')
+    print('-' * 40)
 
     def cli_cb(phase, current, total, msg):
-        print(f'  [{phase.upper():7s}] {msg}')
+        print('  [' + phase.upper() + '] ' + msg)
 
     try:
         results = run_sort(DEFAULT_CONFIG, step_cb=cli_cb)
         r = results
-        print(f'\n{"═"*40}')
-        print(f'✅  Done!')
-        print(f'  Photos scanned:  {r["total_photos"]}')
-        print(f'  People found:    {r["people_found"]}')
-        print(f'  Photos sorted:   {r["photos_sorted"]}')
-        print(f'  Unmatched:       {r["unmatched"]}')
-        print(f'  Output:          {r["output_folder"]}')
+        print('\n' + '=' * 40)
+        print('Done!')
+        print('  Photos scanned:  ' + str(r['total_photos']))
+        print('  People found:    ' + str(r['people_found']))
+        print('  Photos sorted:   ' + str(r['photos_sorted']))
+        print('  Unmatched:       ' + str(r['unmatched']))
+        print('  Output:          ' + r['output_folder'])
     except Exception as e:
-        print(f'\n❌  Error: {e}')
+        print('\nError: ' + str(e))
         sys.exit(1)
