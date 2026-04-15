@@ -280,13 +280,7 @@ def render_results(r):
         else:
             img_tag = PLACEHOLDER
 
-        cards_html += f"""
-            <div class="person-card">
-                {img_tag}
-                <div class="person-name">{f['name']}</div>
-                <div class="person-badge">{f['count']} photo{'s' if f['count'] != 1 else ''}</div>
-            </div>
-        """
+       cards_html += '<div class="person-card">' + img_tag + '<div class="person-name">' + f['name'] + '</div><div class="person-badge">' + str(f['count']) + (' photos' if f['count'] != 1 else ' photo') + '</div></div>'
 
     if len(r['person_folders']) > 60:
         cards_html += f'<div class="person-card" style="justify-content:center;padding:16px;"><span style="color:#A09880;font-size:12px;">+{len(r["person_folders"])-60} more</span></div>'
