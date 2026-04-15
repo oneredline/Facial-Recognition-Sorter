@@ -71,7 +71,7 @@ html, body, [class*="css"], .stApp {
     font-size: 13px !important; padding: .7rem 1rem !important;
     letter-spacing: .04em !important; margin-top: 6px !important;
 }
-.stButton > button:hover   { background: #3A3530 !important; }
+.stButton > button:hover    { background: #3A3530 !important; }
 .stButton > button:disabled { background: #D5D0C8 !important; color: #A09880 !important; }
 
 .main-header {
@@ -113,7 +113,6 @@ html, body, [class*="css"], .stApp {
     color: #A09880; margin: 0 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid #EDE9E1;
 }
 
-/* ── Person cards with face thumbnail ── */
 .person-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -125,19 +124,12 @@ html, body, [class*="css"], .stApp {
     border-radius: 10px; overflow: hidden;
     display: flex; flex-direction: column; align-items: center;
     padding-bottom: 10px;
-    transition: border-color .15s;
 }
 .person-card:hover { border-color: #C4A882; }
 .person-thumb {
     width: 100%; aspect-ratio: 1;
     object-fit: cover; display: block;
     background: #EDE9E1;
-}
-.person-thumb-placeholder {
-    width: 100%; aspect-ratio: 1;
-    background: #EDE9E1; display: flex;
-    align-items: center; justify-content: center;
-    font-size: 32px;
 }
 .person-name {
     font-size: 11px; color: #3A3530; font-weight: 500;
@@ -182,8 +174,13 @@ html, body, [class*="css"], .stApp {
 </style>
 """
 
+PLACEHOLDER = (
+    '<div style="width:100%;aspect-ratio:1;background:#EDE9E1;'
+    'display:flex;align-items:center;justify-content:center;font-size:32px;">👤</div>'
+)
 
-def thumbnail_to_b64(path: str):
+
+def thumbnail_to_b64(path):
     try:
         with open(path, 'rb') as f:
             return base64.b64encode(f.read()).decode('utf-8')
@@ -191,7 +188,7 @@ def thumbnail_to_b64(path: str):
         return None
 
 
-def render_sidebar() -> dict:
+def render_sidebar():
     with st.sidebar:
         st.markdown("""
             <div class="sidebar-brand">
@@ -244,7 +241,7 @@ def render_sidebar() -> dict:
     }
 
 
-def render_results(r: dict):
+def render_results(r):
     st.success(f"✅  Sort complete — {r['people_found']} people found across {r['total_photos']} photos.")
 
     st.markdown(f"""
@@ -276,14 +273,12 @@ def render_results(r: dict):
 
     cards_html = '<div class="person-grid">'
     for f in r['person_folders'][:60]:
-if f.get('thumbnail'):
-            b64 = thumbnail_to_b64(f['thumbnail'])
-            if b64:
-                img_tag = f'<img class="person-thumb" src="data:image/jpeg;base64,{b64}" alt="{f["name"]}">'
-            else:
-                img_tag = '<div class="person-thumb-placeholder" style="width:100%;aspect-ratio:1;background:#EDE9E1;display:flex;align-items:center;justify-content:center;font-size:32px;">👤</div>'
+        thumb_path = f.get('thumbnail')
+        if thumb_path:
+            b64 = thumbnail_to_b64(thumb_path)
+            img_tag = f'<img class="person-thumb" src="data:image/jpeg;base64,{b64}" alt="{f["name"]}">' if b64 else PLACEHOLDER
         else:
-            img_tag = '<div class="person-thumb-placeholder" style="width:100%;aspect-ratio:1;background:#EDE9E1;display:flex;align-items:center;justify-content:center;font-size:32px;">👤</div>'
+            img_tag = PLACEHOLDER
 
         cards_html += f"""
             <div class="person-card">
@@ -368,7 +363,7 @@ def main():
 
         def step_cb(phase, current, total, message):
             prev = {'init': 0.0, 'scan': 0.02, 'cluster': 0.65, 'write': 0.80}
-            high = {'init': 0.02,'scan': 0.65,  'cluster': 0.80, 'write': 1.0}
+            high = {'init': 0.02, 'scan': 0.65, 'cluster': 0.80, 'write': 1.0}
             low  = prev.get(phase, 0.0)
             top  = high.get(phase, 1.0)
             frac = low + (current / max(total, 1)) * (top - low)
