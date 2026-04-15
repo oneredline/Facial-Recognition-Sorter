@@ -4,7 +4,6 @@ Core face detection, filtering, clustering, and thumbnail generation pipeline.
 Can be imported by app.py (dashboard) or run directly from the terminal.
 """
 
-import os
 import sys
 import shutil
 import cv2
@@ -65,14 +64,27 @@ def should_keep_face(face, image_width, image_height, sharpness, cfg):
 
 
 def face_quality_score(face_entry):
-    score = face_entry['sharpness'] * 0.4
-    score += face_entry['det_score'] * 120
-    score -= abs(face_entry.get('yaw', 0)) * 0.4
-    score -= abs(face_entry.get('pitch', 0)) * 0.4
+    """
+    Score a face for thumbnail selection.
+    Rewards: large face in frame, sharp image, high detection confidence, straight-on angle.
+    Penalises: small face, blur, turned head.
+    """
+    x1, y1, x2, y2 = face_entry['bbox']
+    face_width = x2 - x1
+
+    score  = face_width * 1.2
+    score += face_entry['sharpness'] * 0.3
+    score += face_entry['det_score'] * 100
+    score -= abs(face_entry.get('yaw',   0)) * 0.5
+    score -= abs(face_entry.get('pitch', 0)) * 0.5
     return score
 
 
 def generate_thumbnail(img_path, bbox, output_path):
+    """
+    Crop the face with padding, fill to a square using a blurred
+    version of the edges (no white corners), resize and save.
+    """
     img = load_image(Path(img_path))
     if img is None:
         return False
@@ -80,8 +92,8 @@ def generate_thumbnail(img_path, bbox, output_path):
     h, w = img.shape[:2]
     x1, y1, x2, y2 = [int(v) for v in bbox]
 
-    pad_x = int((x2 - x1) * 0.45)
-    pad_y = int((y2 - y1) * 0.55)
+    pad_x = int((x2 - x1) * 0.50)
+    pad_y = int((y2 - y1) * 0.60)
     x1 = max(0, x1 - pad_x)
     y1 = max(0, y1 - pad_y)
     x2 = min(w, x2 + pad_x)
@@ -93,12 +105,18 @@ def generate_thumbnail(img_path, bbox, output_path):
 
     ch, cw = crop.shape[:2]
     dim = max(ch, cw)
-    canvas = np.full((dim, dim, 3), [245, 243, 238], dtype=np.uint8)
-    y_off = (dim - ch) // 2
-    x_off = (dim - cw) // 2
-    canvas[y_off:y_off + ch, x_off:x_off + cw] = crop
 
-    thumb = cv2.resize(canvas, (THUMBNAIL_SIZE, THUMBNAIL_SIZE), interpolation=cv2.INTER_LANCZOS4)
+    if ch != cw:
+        blurred_bg = cv2.resize(crop, (dim, dim), interpolation=cv2.INTER_LINEAR)
+        blurred_bg = cv2.GaussianBlur(blurred_bg, (0, 0), sigmaX=dim * 0.08)
+        y_off = (dim - ch) // 2
+        x_off = (dim - cw) // 2
+        blurred_bg[y_off:y_off + ch, x_off:x_off + cw] = crop
+        square = blurred_bg
+    else:
+        square = crop
+
+    thumb = cv2.resize(square, (THUMBNAIL_SIZE, THUMBNAIL_SIZE), interpolation=cv2.INTER_LANCZOS4)
     pil_thumb = PILImage.fromarray(cv2.cvtColor(thumb, cv2.COLOR_BGR2RGB))
     pil_thumb.save(str(output_path), 'JPEG', quality=99)
     return True
