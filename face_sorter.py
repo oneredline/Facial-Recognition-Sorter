@@ -28,7 +28,7 @@ DEFAULT_CONFIG = {
     'dbscan_min_samples':   2,
 }
 
-THUMBNAIL_SIZE = 400
+THUMBNAIL_SIZE = 500
 
 
 def load_image(path):
@@ -100,7 +100,7 @@ def generate_thumbnail(img_path, bbox, output_path):
 
     thumb = cv2.resize(canvas, (THUMBNAIL_SIZE, THUMBNAIL_SIZE), interpolation=cv2.INTER_LANCZOS4)
     pil_thumb = PILImage.fromarray(cv2.cvtColor(thumb, cv2.COLOR_BGR2RGB))
-    pil_thumb.save(str(output_path), 'JPEG', quality=97)
+    pil_thumb.save(str(output_path), 'JPEG', quality=99)
     return True
 
 
