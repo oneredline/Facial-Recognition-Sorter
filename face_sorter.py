@@ -1,6 +1,6 @@
 """
 face_sorter.py
-Core face detection, filtering, and clustering pipeline.
+Core face detection, filtering, clustering, and thumbnail generation pipeline.
 Can be imported by app.py (dashboard) or run directly from the terminal.
 """
 
@@ -27,6 +27,8 @@ DEFAULT_CONFIG = {
     'dbscan_eps':           0.45,
     'dbscan_min_samples':   2,
 }
+
+THUMBNAIL_SIZE = 160
 
 
 def load_image(path: Path):
@@ -60,6 +62,56 @@ def should_keep_face(face, image_width, image_height, sharpness, cfg):
         if abs(yaw) > cfg['max_yaw_angle'] or abs(pitch) > cfg['max_pitch_angle']:
             return False, 'angle'
     return True, 'ok'
+
+
+def face_quality_score(face_entry: dict) -> float:
+    """
+    Score a face entry for thumbnail selection.
+    Rewards sharpness and confidence, penalises head rotation.
+    Higher = better thumbnail candidate.
+    """
+    score = face_entry['sharpness'] * 0.4
+    score += face_entry['det_score'] * 120
+    score -= abs(face_entry.get('yaw',   0)) * 0.4
+    score -= abs(face_entry.get('pitch', 0)) * 0.4
+    return score
+
+
+def generate_thumbnail(img_path: str, bbox: list, output_path: Path) -> bool:
+    """
+    Crop the face region with generous padding, make it square,
+    resize to THUMBNAIL_SIZE, and save as JPEG.
+    Returns True on success.
+    """
+    img = load_image(Path(img_path))
+    if img is None:
+        return False
+
+    h, w = img.shape[:2]
+    x1, y1, x2, y2 = [int(v) for v in bbox]
+
+    pad_x = int((x2 - x1) * 0.45)
+    pad_y = int((y2 - y1) * 0.55)
+    x1 = max(0, x1 - pad_x)
+    y1 = max(0, y1 - pad_y)
+    x2 = min(w, x2 + pad_x)
+    y2 = min(h, y2 + pad_y)
+
+    crop = img[y1:y2, x1:x2]
+    if crop.size == 0:
+        return False
+
+    ch, cw = crop.shape[:2]
+    dim = max(ch, cw)
+    canvas = np.full((dim, dim, 3), [245, 243, 238], dtype=np.uint8)
+    y_off = (dim - ch) // 2
+    x_off = (dim - cw) // 2
+    canvas[y_off:y_off + ch, x_off:x_off + cw] = crop
+
+    thumb = cv2.resize(canvas, (THUMBNAIL_SIZE, THUMBNAIL_SIZE), interpolation=cv2.INTER_LANCZOS4)
+    pil_thumb = PILImage.fromarray(cv2.cvtColor(thumb, cv2.COLOR_BGR2RGB))
+    pil_thumb.save(str(output_path), 'JPEG', quality=88)
+    return True
 
 
 def collect_image_paths(folder: Path):
@@ -107,8 +159,8 @@ def run_sort(config: dict, step_cb=None) -> dict:
 
     cb('scan', 0, len(image_paths), 'Starting face detection...')
 
-    face_data   = []
-    skip_counts = {'size': 0, 'confidence': 0, 'blur': 0, 'angle': 0}
+    face_data      = []
+    skip_counts    = {'size': 0, 'confidence': 0, 'blur': 0, 'angle': 0}
     total_detected = 0
 
     for i, img_path in enumerate(image_paths):
@@ -130,7 +182,20 @@ def run_sort(config: dict, step_cb=None) -> dict:
                 continue
             if face.embedding is None:
                 continue
-            face_data.append({'embedding': face.embedding, 'image_path': str(img_path)})
+
+            yaw, pitch = 0.0, 0.0
+            if hasattr(face, 'pose') and face.pose is not None:
+                yaw, pitch = float(face.pose[0]), float(face.pose[1])
+
+            face_data.append({
+                'embedding':  face.embedding,
+                'image_path': str(img_path),
+                'bbox':       [float(v) for v in face.bbox],
+                'det_score':  float(face.det_score),
+                'sharpness':  sharpness,
+                'yaw':        yaw,
+                'pitch':      pitch,
+            })
 
     if not face_data:
         raise ValueError(
@@ -156,7 +221,9 @@ def run_sort(config: dict, step_cb=None) -> dict:
     unmatched_path = output_path / 'unmatched'
     unmatched_path.mkdir(exist_ok=True)
 
-    person_photos: dict[int, set] = {}
+    person_photos:  dict[int, set]  = {}
+    person_faces:   dict[int, list] = {}
+
     for i, label in enumerate(labels):
         img_path = face_data[i]['image_path']
         if label == -1:
@@ -165,23 +232,40 @@ def run_sort(config: dict, step_cb=None) -> dict:
                 shutil.copy2(img_path, dest)
         else:
             person_photos.setdefault(label, set()).add(img_path)
+            person_faces.setdefault(label, []).append(face_data[i])
 
-    sorted_people = sorted(person_photos.items(), key=lambda x: len(x[1]), reverse=True)
+    sorted_people  = sorted(person_photos.items(), key=lambda x: len(x[1]), reverse=True)
     total_to_write = sum(len(p) for _, p in sorted_people)
-    written = 0
+    written        = 0
     person_folders = []
 
     for rank, (label, photos) in enumerate(sorted_people, start=1):
         folder_name   = f'person-{rank:03d}'
         person_folder = output_path / folder_name
         person_folder.mkdir(exist_ok=True)
+
         for img_path in photos:
             dest = person_folder / Path(img_path).name
             if not dest.exists():
                 shutil.copy2(img_path, dest)
             written += 1
             cb('write', written, total_to_write, f'Writing {folder_name}...')
-        person_folders.append({'name': folder_name, 'count': len(photos)})
+
+        thumb_path = person_folder / 'thumbnail.jpg'
+        thumb_generated = False
+        if label in person_faces:
+            best_face = max(person_faces[label], key=face_quality_score)
+            thumb_generated = generate_thumbnail(
+                best_face['image_path'],
+                best_face['bbox'],
+                thumb_path
+            )
+
+        person_folders.append({
+            'name':      folder_name,
+            'count':     len(photos),
+            'thumbnail': str(thumb_path) if thumb_generated else None,
+        })
 
     results = {
         'success':        True,
@@ -201,12 +285,8 @@ def run_sort(config: dict, step_cb=None) -> dict:
 
 
 if __name__ == '__main__':
-    from tqdm import tqdm
-
     print('\n📸  FaceSorter — CLI Mode')
     print('─' * 40)
-
-    _last_progress = [0]
 
     def cli_cb(phase, current, total, msg):
         print(f'  [{phase.upper():7s}] {msg}')
