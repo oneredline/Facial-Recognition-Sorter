@@ -1,7 +1,7 @@
 """
 app.py — FaceSorter Dashboard
-Topaz-themed Streamlit UI for event photo face sorting.
-Run with: streamlit run app.py
+Pic-Time inspired design: light, airy, warm, and editorial.
+Run with: python3 -m streamlit run app.py
 """
 
 import streamlit as st
@@ -14,151 +14,161 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-TOPAZ_CSS = """
+PICTIME_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap');
 
 html, body, [class*="css"], .stApp {
     font-family: 'Inter', sans-serif !important;
-    background-color: #0C1822 !important;
-    color: #DFF0F6 !important;
+    background-color: #F7F5F0 !important;
+    color: #1C1C1C !important;
 }
 
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 1.4rem !important; padding-bottom: 2rem !important; }
+.block-container { padding-top: 1.6rem !important; padding-bottom: 3rem !important; }
 
 [data-testid="stSidebar"] {
-    background-color: #081017 !important;
-    border-right: 1px solid #172D3E !important;
+    background-color: #FFFFFF !important;
+    border-right: 1px solid #E8E4DC !important;
 }
 
 .sidebar-brand {
-    display: flex; align-items: center; gap: 10px;
-    padding-bottom: 14px; margin-bottom: 14px;
-    border-bottom: 1px solid #172D3E;
+    display: flex; align-items: center; gap: 12px;
+    padding-bottom: 18px; margin-bottom: 18px;
+    border-bottom: 1px solid #EDE9E1;
 }
 .sidebar-brand-icon {
-    width: 32px; height: 32px;
-    background: rgba(0,196,218,.15);
-    border: 1px solid rgba(0,196,218,.3);
-    border-radius: 8px;
+    width: 36px; height: 36px;
+    background: #F0EBE0;
+    border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px; flex-shrink: 0;
+    font-size: 18px; flex-shrink: 0;
 }
-.sidebar-brand-title { font-size: 15px; font-weight: 700; color: #00C4DA; letter-spacing: -.3px; }
-.sidebar-brand-sub   { font-size: 10px; color: #4A7888; margin-top: 1px; }
+.sidebar-brand-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px; color: #1C1C1C; letter-spacing: -.2px;
+}
+.sidebar-brand-sub { font-size: 11px; color: #9E9890; margin-top: 1px; }
 
 .section-label {
     font-size: 10px; font-weight: 600;
     letter-spacing: .1em; text-transform: uppercase;
-    color: #4A7888; margin: 14px 0 6px 0;
-    padding-bottom: 6px; border-bottom: 1px solid #172D3E;
+    color: #A09880; margin: 16px 0 8px 0;
+    padding-bottom: 7px; border-bottom: 1px solid #EDE9E1;
 }
 
-.stTextInput > label { color: #7AAABB !important; font-size: 12px !important; }
+.stTextInput > label { color: #6E6860 !important; font-size: 12px !important; font-weight: 500 !important; }
 .stTextInput > div > div > input {
-    background: #0F2030 !important; border: 1px solid #173040 !important;
-    border-radius: 6px !important; color: #DFF0F6 !important; font-size: 13px !important;
+    background: #FAF8F4 !important; border: 1px solid #DDD9D0 !important;
+    border-radius: 8px !important; color: #1C1C1C !important; font-size: 13px !important;
 }
 .stTextInput > div > div > input:focus {
-    border-color: #00C4DA !important;
-    box-shadow: 0 0 0 2px rgba(0,196,218,.14) !important;
+    border-color: #C4A882 !important;
+    box-shadow: 0 0 0 3px rgba(196,168,130,.12) !important;
 }
 
-.stSlider > label { color: #7AAABB !important; font-size: 12px !important; }
+.stSlider > label { color: #6E6860 !important; font-size: 12px !important; font-weight: 500 !important; }
 .stSlider [data-baseweb="slider"] div[role="slider"] {
-    background-color: #00C4DA !important; border-color: #00C4DA !important;
+    background-color: #C4A882 !important; border-color: #C4A882 !important;
 }
 
 .stButton > button {
     width: 100% !important;
-    background: linear-gradient(135deg,#00C4DA,#0094AB) !important;
-    color: #fff !important; border: none !important; border-radius: 8px !important;
-    font-weight: 600 !important; font-size: 14px !important;
-    padding: .65rem 1rem !important; letter-spacing: .02em !important;
-    margin-top: 4px !important;
-    box-shadow: 0 4px 16px rgba(0,196,218,.22) !important;
+    background: #1C1C1C !important;
+    color: #FFFFFF !important; border: none !important; border-radius: 8px !important;
+    font-weight: 500 !important; font-size: 13px !important;
+    padding: .7rem 1rem !important; letter-spacing: .04em !important;
+    margin-top: 6px !important;
 }
-.stButton > button:hover {
-    background: linear-gradient(135deg,#1AD6EC,#00AECA) !important;
-    box-shadow: 0 6px 22px rgba(0,196,218,.38) !important;
-    transform: translateY(-1px) !important;
-}
-.stButton > button:disabled {
-    background: #172D3E !important; color: #365060 !important;
-    box-shadow: none !important; transform: none !important;
-}
+.stButton > button:hover { background: #3A3530 !important; }
+.stButton > button:disabled { background: #D5D0C8 !important; color: #A09880 !important; }
 
 .main-header {
-    background: #0F2030; border: 1px solid #172D3E;
-    border-radius: 12px; padding: 18px 24px;
+    background: #FFFFFF; border: 1px solid #E8E4DC;
+    border-radius: 14px; padding: 22px 28px;
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
-.main-header-title { font-size: 22px; font-weight: 700; color: #DFF0F6; letter-spacing: -.5px; margin: 0; }
-.main-header-title span { color: #00C4DA; }
-.main-header-sub { margin: 4px 0 0 0; color: #4A7888; font-size: 13px; }
+.main-header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px; color: #1C1C1C; letter-spacing: -.4px; margin: 0;
+}
+.main-header-title span { color: #C4A882; }
+.main-header-sub { margin: 5px 0 0 0; color: #9E9890; font-size: 13px; }
 .main-header-badge {
-    background: rgba(0,196,218,.12); border: 1px solid rgba(0,196,218,.25);
-    color: #00C4DA; border-radius: 6px; padding: 4px 10px;
-    font-size: 11px; font-weight: 600;
+    background: #F5F0E8; border: 1px solid #E0D8CB;
+    color: #8A7860; border-radius: 20px; padding: 5px 14px;
+    font-size: 11px; font-weight: 500;
 }
 
-.stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+.stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
 .stat-card {
-    background: #0F2030; border: 1px solid #172D3E;
-    border-radius: 10px; padding: 14px; text-align: center;
+    background: #FFFFFF; border: 1px solid #E8E4DC;
+    border-radius: 12px; padding: 18px 16px; text-align: center;
 }
-.stat-card.hl { border-color: rgba(0,196,218,.4); background: rgba(0,196,218,.07); }
-.stat-icon  { font-size: 18px; margin-bottom: 5px; }
-.stat-value { font-size: 26px; font-weight: 700; color: #DFF0F6; line-height: 1; margin-bottom: 4px; }
-.stat-value.teal { color: #00C4DA; }
-.stat-label { font-size: 11px; color: #4A7888; font-weight: 500; }
+.stat-card.hl { background: #F9F5EE; border-color: #DDD0B8; }
+.stat-icon  { font-size: 20px; margin-bottom: 6px; }
+.stat-value {
+    font-size: 28px; font-weight: 300; color: #1C1C1C;
+    line-height: 1; margin-bottom: 5px;
+    font-family: 'DM Serif Display', serif;
+}
+.stat-value.warm { color: #C4A882; }
+.stat-label { font-size: 11px; color: #9E9890; font-weight: 500; letter-spacing: .03em; text-transform: uppercase; }
 
 .section-card {
-    background: #0F2030; border: 1px solid #172D3E;
-    border-radius: 10px; padding: 16px 18px; margin-bottom: 14px;
+    background: #FFFFFF; border: 1px solid #E8E4DC;
+    border-radius: 12px; padding: 20px 22px; margin-bottom: 16px;
 }
 .section-card-title {
-    font-size: 11px; font-weight: 600; letter-spacing: .08em;
-    text-transform: uppercase; color: #4A7888;
-    margin: 0 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid #172D3E;
+    font-size: 10px; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: #A09880;
+    margin: 0 0 14px 0; padding-bottom: 10px; border-bottom: 1px solid #EDE9E1;
 }
 
-.folder-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(170px,1fr)); gap: 7px; margin-top: 4px; }
+.folder-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(175px,1fr)); gap: 8px; margin-top: 4px; }
 .folder-item {
-    background: #0C1822; border: 1px solid #172D3E;
-    border-radius: 7px; padding: 8px 10px;
-    display: flex; align-items: center; gap: 7px;
+    background: #FAF8F4; border: 1px solid #E8E4DC;
+    border-radius: 8px; padding: 9px 12px;
+    display: flex; align-items: center; gap: 8px;
 }
-.folder-name { font-size: 12px; color: #BCDCE8; font-weight: 500; flex: 1; }
+.folder-name { font-size: 12px; color: #3A3530; font-weight: 500; flex: 1; }
 .folder-badge {
-    font-size: 10px; color: #00C4DA; font-weight: 600;
-    background: rgba(0,196,218,.1); padding: 1px 6px; border-radius: 4px;
+    font-size: 10px; color: #8A7860; font-weight: 600;
+    background: #EDE8DF; padding: 2px 7px; border-radius: 10px;
 }
 
 .idle-box {
-    text-align: center; padding: 48px 24px;
-    background: #0F2030; border: 1px dashed #172D3E; border-radius: 12px;
-    margin-bottom: 14px;
+    text-align: center; padding: 56px 24px;
+    background: #FFFFFF; border: 1px solid #E8E4DC;
+    border-radius: 14px; margin-bottom: 16px;
 }
-.idle-box-icon { font-size: 42px; margin-bottom: 12px; }
-.idle-box-title { font-size: 16px; color: #7AAABB; font-weight: 500; margin: 0 0 6px 0; }
-.idle-box-sub   { font-size: 13px; color: #365060; margin: 0; }
+.idle-box-icon { font-size: 44px; margin-bottom: 14px; }
+.idle-box-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px; color: #3A3530; margin: 0 0 8px 0;
+}
+.idle-box-sub { font-size: 13px; color: #9E9890; margin: 0; line-height: 1.6; }
 
 .tip-box {
-    background: rgba(0,196,218,.06); border: 1px solid rgba(0,196,218,.2);
-    border-radius: 8px; padding: 12px 16px; margin-top: 14px;
+    background: #F9F5EE; border: 1px solid #DDD0B8;
+    border-radius: 10px; padding: 14px 18px; margin-top: 16px;
 }
-.tip-box-title { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #00C4DA; margin: 0 0 7px 0; }
-.tip-box-body  { font-size: 12px; color: #7AAABB; line-height: 1.75; margin: 0; }
-.tip-box-body code { background: rgba(0,196,218,.12); padding: 1px 5px; border-radius: 3px; font-size: 11px; color: #00C4DA; }
+.tip-box-title {
+    font-size: 10px; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: #8A7860; margin: 0 0 8px 0;
+}
+.tip-box-body { font-size: 12px; color: #6E6860; line-height: 1.8; margin: 0; }
+.tip-box-body code {
+    background: #EDE8DF; padding: 1px 6px;
+    border-radius: 4px; font-size: 11px; color: #6A5E4A;
+}
 
 .stProgress > div > div > div > div {
-    background: linear-gradient(90deg,#00C4DA,#0094AB) !important; border-radius: 4px !important;
+    background: linear-gradient(90deg,#C4A882,#A88A65) !important; border-radius: 4px !important;
 }
 .stProgress > div > div > div {
-    background: #172D3E !important; border-radius: 4px !important;
+    background: #EDE9E1 !important; border-radius: 4px !important;
 }
 </style>
 """
@@ -176,30 +186,30 @@ def render_sidebar() -> dict:
             </div>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="section-label">📁 Folders</div>', unsafe_allow_html=True)
-        input_folder  = st.text_input("Input folder",  value="./input",  label_visibility="visible")
-        output_folder = st.text_input("Output folder", value="./output", label_visibility="visible")
+        st.markdown('<div class="section-label">Folders</div>', unsafe_allow_html=True)
+        input_folder  = st.text_input("Input folder",  value="./input")
+        output_folder = st.text_input("Output folder", value="./output")
 
-        st.markdown('<div class="section-label">🔍 Face Detection</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Face Detection</div>', unsafe_allow_html=True)
         min_face_size  = st.slider("Min face size",   0.01, 0.15, 0.04, 0.01, format="%.2f",
                                    help="Fraction of image width. Raise to exclude background people.")
         min_confidence = st.slider("Min confidence",  0.30, 0.95, 0.55, 0.05, format="%.2f",
-                                   help="InsightFace score. Lower catches more faces.")
+                                   help="Lower catches more faces including candids.")
         min_sharpness  = st.slider("Min sharpness",   10,   150,  45,
-                                   help="Lower = blur-tolerant (good for candids).")
+                                   help="Lower = more blur-tolerant. Good for candid shots.")
 
-        st.markdown('<div class="section-label">🎭 Pose / Candid Angles</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Pose & Candid Angles</div>', unsafe_allow_html=True)
         max_yaw   = st.slider("Max yaw (°)",   15, 90, 60, help="Left/right head turn. 60°+ is candid-friendly.")
         max_pitch = st.slider("Max pitch (°)", 15, 80, 45, help="Up/down tilt.")
 
-        st.markdown('<div class="section-label">🧩 Clustering</div>', unsafe_allow_html=True)
-        dbscan_eps   = st.slider("Matching strictness", 0.25, 0.70, 0.45, 0.05, format="%.2f",
-                                 help="Lower = stricter. Raise if same person splits into two folders.")
-        min_samples  = st.slider("Min photos for folder", 1, 10, 2,
-                                 help="A person must appear in this many photos to get their own folder.")
+        st.markdown('<div class="section-label">Clustering</div>', unsafe_allow_html=True)
+        dbscan_eps  = st.slider("Matching strictness", 0.25, 0.70, 0.45, 0.05, format="%.2f",
+                                help="Lower = stricter. Raise if same person splits into two folders.")
+        min_samples = st.slider("Min photos for folder", 1, 10, 2,
+                                help="Person must appear in this many photos to get a folder.")
 
         st.markdown("<br>", unsafe_allow_html=True)
-        run = st.button("▶  Sort Photos", disabled=st.session_state.get('running', False), use_container_width=True)
+        run = st.button("Sort Photos →", disabled=st.session_state.get('running', False))
 
     return {
         'run': run,
@@ -229,28 +239,28 @@ def render_results(r: dict):
             </div>
             <div class="stat-card hl">
                 <div class="stat-icon">👥</div>
-                <div class="stat-value teal">{r['people_found']}</div>
+                <div class="stat-value warm">{r['people_found']}</div>
                 <div class="stat-label">People found</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">✅</div>
+                <div class="stat-icon">✓</div>
                 <div class="stat-value">{r['photos_sorted']}</div>
                 <div class="stat-label">Photos sorted</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">❓</div>
+                <div class="stat-icon">○</div>
                 <div class="stat-value">{r['unmatched']}</div>
                 <div class="stat-label">Unmatched</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="section-card"><div class="section-card-title">📂 Output Folders</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-card"><div class="section-card-title">Output Folders</div>', unsafe_allow_html=True)
     items_html = '<div class="folder-grid">'
     for f in r['person_folders'][:40]:
-        items_html += f'<div class="folder-item"><span style="font-size:14px;">👤</span><span class="folder-name">{f["name"]}</span><span class="folder-badge">{f["count"]}</span></div>'
+        items_html += f'<div class="folder-item"><span style="font-size:15px;">👤</span><span class="folder-name">{f["name"]}</span><span class="folder-badge">{f["count"]}</span></div>'
     if len(r['person_folders']) > 40:
-        items_html += f'<div class="folder-item"><span class="folder-name" style="color:#365060;">+{len(r["person_folders"])-40} more...</span></div>'
+        items_html += f'<div class="folder-item"><span class="folder-name" style="color:#A09880;">+{len(r["person_folders"])-40} more folders</span></div>'
     items_html += '</div>'
     st.markdown(items_html, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
@@ -258,10 +268,10 @@ def render_results(r: dict):
     sk = r['skip_counts']
     st.markdown(f"""
         <div class="tip-box">
-            <p class="tip-box-title">💡 Summary &amp; next steps</p>
+            <p class="tip-box-title">Summary & Next Steps</p>
             <p class="tip-box-body">
                 Output saved to <code>{r['output_folder']}</code><br>
-                Skipped {sk.get('size',0)} background faces &nbsp;·&nbsp;
+                Skipped {sk.get('size',0)} background &nbsp;·&nbsp;
                 {sk.get('blur',0)} blurry &nbsp;·&nbsp;
                 {sk.get('angle',0)} extreme angles &nbsp;·&nbsp;
                 {sk.get('confidence',0)} low confidence<br>
@@ -277,10 +287,10 @@ def render_idle():
         <div class="idle-box">
             <div class="idle-box-icon">📷</div>
             <p class="idle-box-title">Ready to sort your event photos</p>
-            <p class="idle-box-sub">Set your input folder in the sidebar, adjust filters if needed,<br>then click Sort Photos to begin.</p>
+            <p class="idle-box-sub">Set your input folder path in the sidebar,<br>adjust filters if needed, then click Sort Photos.</p>
         </div>
         <div class="tip-box">
-            <p class="tip-box-title">💡 Quick start</p>
+            <p class="tip-box-title">Quick Start</p>
             <p class="tip-box-body">
                 1. Export your event photos as JPG or TIFF into the <code>input/</code> folder<br>
                 2. Leave all settings at defaults for your first run<br>
@@ -292,7 +302,7 @@ def render_idle():
 
 
 def main():
-    st.markdown(TOPAZ_CSS, unsafe_allow_html=True)
+    st.markdown(PICTIME_CSS, unsafe_allow_html=True)
 
     if 'results' not in st.session_state:
         st.session_state.results = None
@@ -322,14 +332,14 @@ def main():
         status_text  = st.empty()
 
         def step_cb(phase, current, total, message):
-            fractions = {'init': 0.02, 'scan': 0.65, 'cluster': 0.80, 'write': 1.0}
             prev = {'init': 0.0, 'scan': 0.02, 'cluster': 0.65, 'write': 0.80}
+            high = {'init': 0.02,'scan': 0.65,  'cluster': 0.80, 'write': 1.0}
             low  = prev.get(phase, 0.0)
-            high = fractions.get(phase, 1.0)
-            frac = low + (current / max(total, 1)) * (high - low)
+            top  = high.get(phase, 1.0)
+            frac = low + (current / max(total, 1)) * (top - low)
             progress_bar.progress(round(min(frac, 1.0), 3))
             status_text.markdown(
-                f"<p style='color:#4A7888;font-size:12px;'>⏳ {message}</p>",
+                f"<p style='color:#A09880;font-size:12px;margin-top:4px;'>⏳ {message}</p>",
                 unsafe_allow_html=True
             )
 
