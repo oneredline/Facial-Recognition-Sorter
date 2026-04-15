@@ -1,10 +1,11 @@
 """
 app.py — FaceSorter Dashboard
-Pic-Time inspired design: light, airy, warm, and editorial.
+Pic-Time inspired design with face thumbnail previews.
 Run with: python3 -m streamlit run app.py
 """
 
 import streamlit as st
+import base64
 from pathlib import Path
 
 st.set_page_config(
@@ -38,23 +39,16 @@ html, body, [class*="css"], .stApp {
     border-bottom: 1px solid #EDE9E1;
 }
 .sidebar-brand-icon {
-    width: 36px; height: 36px;
-    background: #F0EBE0;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
+    width: 36px; height: 36px; background: #F0EBE0;
+    border-radius: 10px; display: flex; align-items: center;
+    justify-content: center; font-size: 18px; flex-shrink: 0;
 }
-.sidebar-brand-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 17px; color: #1C1C1C; letter-spacing: -.2px;
-}
-.sidebar-brand-sub { font-size: 11px; color: #9E9890; margin-top: 1px; }
+.sidebar-brand-title { font-family: 'DM Serif Display', serif; font-size: 17px; color: #1C1C1C; }
+.sidebar-brand-sub   { font-size: 11px; color: #9E9890; margin-top: 1px; }
 
 .section-label {
-    font-size: 10px; font-weight: 600;
-    letter-spacing: .1em; text-transform: uppercase;
-    color: #A09880; margin: 16px 0 8px 0;
-    padding-bottom: 7px; border-bottom: 1px solid #EDE9E1;
+    font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    color: #A09880; margin: 16px 0 8px 0; padding-bottom: 7px; border-bottom: 1px solid #EDE9E1;
 }
 
 .stTextInput > label { color: #6E6860 !important; font-size: 12px !important; font-weight: 500 !important; }
@@ -63,8 +57,7 @@ html, body, [class*="css"], .stApp {
     border-radius: 8px !important; color: #1C1C1C !important; font-size: 13px !important;
 }
 .stTextInput > div > div > input:focus {
-    border-color: #C4A882 !important;
-    box-shadow: 0 0 0 3px rgba(196,168,130,.12) !important;
+    border-color: #C4A882 !important; box-shadow: 0 0 0 3px rgba(196,168,130,.12) !important;
 }
 
 .stSlider > label { color: #6E6860 !important; font-size: 12px !important; font-weight: 500 !important; }
@@ -73,45 +66,40 @@ html, body, [class*="css"], .stApp {
 }
 
 .stButton > button {
-    width: 100% !important;
-    background: #1C1C1C !important;
-    color: #FFFFFF !important; border: none !important; border-radius: 8px !important;
-    font-weight: 500 !important; font-size: 13px !important;
-    padding: .7rem 1rem !important; letter-spacing: .04em !important;
-    margin-top: 6px !important;
+    width: 100% !important; background: #1C1C1C !important; color: #FFFFFF !important;
+    border: none !important; border-radius: 8px !important; font-weight: 500 !important;
+    font-size: 13px !important; padding: .7rem 1rem !important;
+    letter-spacing: .04em !important; margin-top: 6px !important;
 }
-.stButton > button:hover { background: #3A3530 !important; }
+.stButton > button:hover   { background: #3A3530 !important; }
 .stButton > button:disabled { background: #D5D0C8 !important; color: #A09880 !important; }
 
 .main-header {
-    background: #FFFFFF; border: 1px solid #E8E4DC;
-    border-radius: 14px; padding: 22px 28px;
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 20px;
+    background: #FFFFFF; border: 1px solid #E8E4DC; border-radius: 14px;
+    padding: 22px 28px; display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 20px;
 }
 .main-header-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 26px; color: #1C1C1C; letter-spacing: -.4px; margin: 0;
+    font-family: 'DM Serif Display', serif; font-size: 26px;
+    color: #1C1C1C; letter-spacing: -.4px; margin: 0;
 }
 .main-header-title span { color: #C4A882; }
-.main-header-sub { margin: 5px 0 0 0; color: #9E9890; font-size: 13px; }
+.main-header-sub   { margin: 5px 0 0 0; color: #9E9890; font-size: 13px; }
 .main-header-badge {
-    background: #F5F0E8; border: 1px solid #E0D8CB;
-    color: #8A7860; border-radius: 20px; padding: 5px 14px;
-    font-size: 11px; font-weight: 500;
+    background: #F5F0E8; border: 1px solid #E0D8CB; color: #8A7860;
+    border-radius: 20px; padding: 5px 14px; font-size: 11px; font-weight: 500;
 }
 
 .stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
 .stat-card {
-    background: #FFFFFF; border: 1px solid #E8E4DC;
-    border-radius: 12px; padding: 18px 16px; text-align: center;
+    background: #FFFFFF; border: 1px solid #E8E4DC; border-radius: 12px;
+    padding: 18px 16px; text-align: center;
 }
 .stat-card.hl { background: #F9F5EE; border-color: #DDD0B8; }
-.stat-icon  { font-size: 20px; margin-bottom: 6px; }
-.stat-value {
+.stat-icon    { font-size: 20px; margin-bottom: 6px; }
+.stat-value   {
     font-size: 28px; font-weight: 300; color: #1C1C1C;
-    line-height: 1; margin-bottom: 5px;
-    font-family: 'DM Serif Display', serif;
+    line-height: 1; margin-bottom: 5px; font-family: 'DM Serif Display', serif;
 }
 .stat-value.warm { color: #C4A882; }
 .stat-label { font-size: 11px; color: #9E9890; font-weight: 500; letter-spacing: .03em; text-transform: uppercase; }
@@ -121,32 +109,53 @@ html, body, [class*="css"], .stApp {
     border-radius: 12px; padding: 20px 22px; margin-bottom: 16px;
 }
 .section-card-title {
-    font-size: 10px; font-weight: 600; letter-spacing: .1em;
-    text-transform: uppercase; color: #A09880;
-    margin: 0 0 14px 0; padding-bottom: 10px; border-bottom: 1px solid #EDE9E1;
+    font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    color: #A09880; margin: 0 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid #EDE9E1;
 }
 
-.folder-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(175px,1fr)); gap: 8px; margin-top: 4px; }
-.folder-item {
-    background: #FAF8F4; border: 1px solid #E8E4DC;
-    border-radius: 8px; padding: 9px 12px;
-    display: flex; align-items: center; gap: 8px;
+/* ── Person cards with face thumbnail ── */
+.person-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 4px;
 }
-.folder-name { font-size: 12px; color: #3A3530; font-weight: 500; flex: 1; }
-.folder-badge {
+.person-card {
+    background: #FAF8F4; border: 1px solid #E8E4DC;
+    border-radius: 10px; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center;
+    padding-bottom: 10px;
+    transition: border-color .15s;
+}
+.person-card:hover { border-color: #C4A882; }
+.person-thumb {
+    width: 100%; aspect-ratio: 1;
+    object-fit: cover; display: block;
+    background: #EDE9E1;
+}
+.person-thumb-placeholder {
+    width: 100%; aspect-ratio: 1;
+    background: #EDE9E1; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 32px;
+}
+.person-name {
+    font-size: 11px; color: #3A3530; font-weight: 500;
+    margin: 8px 0 4px 0; text-align: center;
+}
+.person-badge {
     font-size: 10px; color: #8A7860; font-weight: 600;
-    background: #EDE8DF; padding: 2px 7px; border-radius: 10px;
+    background: #EDE8DF; padding: 2px 8px; border-radius: 10px;
 }
 
 .idle-box {
-    text-align: center; padding: 56px 24px;
-    background: #FFFFFF; border: 1px solid #E8E4DC;
-    border-radius: 14px; margin-bottom: 16px;
+    text-align: center; padding: 56px 24px; background: #FFFFFF;
+    border: 1px solid #E8E4DC; border-radius: 14px; margin-bottom: 16px;
 }
-.idle-box-icon { font-size: 44px; margin-bottom: 14px; }
+.idle-box-icon  { font-size: 44px; margin-bottom: 14px; }
 .idle-box-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 20px; color: #3A3530; margin: 0 0 8px 0;
+    font-family: 'DM Serif Display', serif; font-size: 20px;
+    color: #3A3530; margin: 0 0 8px 0;
 }
 .idle-box-sub { font-size: 13px; color: #9E9890; margin: 0; line-height: 1.6; }
 
@@ -172,6 +181,14 @@ html, body, [class*="css"], .stApp {
 }
 </style>
 """
+
+
+def thumbnail_to_b64(path: str) -> str | None:
+    try:
+        with open(path, 'rb') as f:
+            return base64.b64encode(f.read()).decode('utf-8')
+    except Exception:
+        return None
 
 
 def render_sidebar() -> dict:
@@ -255,14 +272,32 @@ def render_results(r: dict):
         </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="section-card"><div class="section-card-title">Output Folders</div>', unsafe_allow_html=True)
-    items_html = '<div class="folder-grid">'
-    for f in r['person_folders'][:40]:
-        items_html += f'<div class="folder-item"><span style="font-size:15px;">👤</span><span class="folder-name">{f["name"]}</span><span class="folder-badge">{f["count"]}</span></div>'
-    if len(r['person_folders']) > 40:
-        items_html += f'<div class="folder-item"><span class="folder-name" style="color:#A09880;">+{len(r["person_folders"])-40} more folders</span></div>'
-    items_html += '</div>'
-    st.markdown(items_html, unsafe_allow_html=True)
+    st.markdown('<div class="section-card"><div class="section-card-title">People Found</div>', unsafe_allow_html=True)
+
+    cards_html = '<div class="person-grid">'
+    for f in r['person_folders'][:60]:
+        if f.get('thumbnail'):
+            b64 = thumbnail_to_b64(f['thumbnail'])
+            if b64:
+                img_tag = f'<img class="person-thumb" src="data:image/jpeg;base64,{b64}" alt="{f["name"]}">'
+            else:
+                img_tag = '<div class="person-thumb-placeholder">👤</div>'
+        else:
+            img_tag = '<div class="person-thumb-placeholder">👤</div>'
+
+        cards_html += f"""
+            <div class="person-card">
+                {img_tag}
+                <div class="person-name">{f['name']}</div>
+                <div class="person-badge">{f['count']} photo{'s' if f['count'] != 1 else ''}</div>
+            </div>
+        """
+
+    if len(r['person_folders']) > 60:
+        cards_html += f'<div class="person-card" style="justify-content:center;padding:16px;"><span style="color:#A09880;font-size:12px;">+{len(r["person_folders"])-60} more</span></div>'
+
+    cards_html += '</div>'
+    st.markdown(cards_html, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     sk = r['skip_counts']
@@ -275,7 +310,7 @@ def render_results(r: dict):
                 {sk.get('blur',0)} blurry &nbsp;·&nbsp;
                 {sk.get('angle',0)} extreme angles &nbsp;·&nbsp;
                 {sk.get('confidence',0)} low confidence<br>
-                If the same person appears in two folders, merge them before uploading.<br>
+                If the same person appears in two cards, merge their folders before uploading.<br>
                 Upload each <code>person-XXX</code> folder as a <strong>Set</strong> inside your Pixieset Collection.
             </p>
         </div>
