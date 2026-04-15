@@ -1,11 +1,12 @@
 """
 app.py - FaceSorter Dashboard
-Pic-Time inspired design with circular face thumbnails and ring borders.
+Light theme during the day, dark theme at night — switches automatically.
 Run with: python3 -m streamlit run app.py
 """
 
 import streamlit as st
 import base64
+from datetime import datetime
 
 st.set_page_config(
     page_title="FaceSorter",
@@ -14,7 +15,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-PICTIME_CSS = """
+hour = datetime.now().hour
+is_dark = hour >= 18 or hour < 6
+
+
+LIGHT_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap');
 
@@ -23,169 +28,112 @@ html, body, [class*="css"], .stApp {
     background-color: #F7F5F0 !important;
     color: #1C1C1C !important;
 }
-
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding-top: 1.6rem !important; padding-bottom: 3rem !important; }
+[data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E8E4DC !important; }
+.sidebar-brand { display:flex; align-items:center; gap:12px; padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid #EDE9E1; }
+.sidebar-brand-icon { width:36px; height:36px; background:#F0EBE0; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.sidebar-brand-title { font-family:'DM Serif Display',serif; font-size:17px; color:#1C1C1C; }
+.sidebar-brand-sub { font-size:11px; color:#9E9890; margin-top:1px; }
+.section-label { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#A09880; margin:16px 0 8px 0; padding-bottom:7px; border-bottom:1px solid #EDE9E1; }
+.stTextInput > label { color:#6E6860 !important; font-size:12px !important; font-weight:500 !important; }
+.stTextInput > div > div > input { background:#FAF8F4 !important; border:1px solid #DDD9D0 !important; border-radius:8px !important; color:#1C1C1C !important; font-size:13px !important; }
+.stTextInput > div > div > input:focus { border-color:#C4A882 !important; box-shadow:0 0 0 3px rgba(196,168,130,.12) !important; }
+.stSlider > label { color:#6E6860 !important; font-size:12px !important; font-weight:500 !important; }
+.stSlider [data-baseweb="slider"] div[role="slider"] { background-color:#C4A882 !important; border-color:#C4A882 !important; }
+.stButton > button { width:100% !important; background:#1C1C1C !important; color:#FFFFFF !important; border:none !important; border-radius:8px !important; font-weight:500 !important; font-size:13px !important; padding:.7rem 1rem !important; letter-spacing:.04em !important; margin-top:6px !important; }
+.stButton > button:hover { background:#3A3530 !important; }
+.stButton > button:disabled { background:#D5D0C8 !important; color:#A09880 !important; }
+.main-header { background:#FFFFFF; border:1px solid #E8E4DC; border-radius:14px; padding:22px 28px; display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.main-header-title { font-family:'DM Serif Display',serif; font-size:26px; color:#1C1C1C; letter-spacing:-.4px; margin:0; }
+.main-header-title span { color:#C4A882; }
+.main-header-sub { margin:5px 0 0 0; color:#9E9890; font-size:13px; }
+.main-header-badge { background:#F5F0E8; border:1px solid #E0D8CB; color:#8A7860; border-radius:20px; padding:5px 14px; font-size:11px; font-weight:500; }
+.stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.stat-card { background:#FFFFFF; border:1px solid #E8E4DC; border-radius:12px; padding:18px 16px; text-align:center; }
+.stat-card.hl { background:#F9F5EE; border-color:#DDD0B8; }
+.stat-icon { font-size:20px; margin-bottom:6px; }
+.stat-value { font-size:28px; font-weight:300; color:#1C1C1C; line-height:1; margin-bottom:5px; font-family:'DM Serif Display',serif; }
+.stat-value.warm { color:#C4A882; }
+.stat-label { font-size:11px; color:#9E9890; font-weight:500; letter-spacing:.03em; text-transform:uppercase; }
+.section-card { background:#FFFFFF; border:1px solid #E8E4DC; border-radius:12px; padding:24px 22px; margin-bottom:16px; }
+.section-card-title { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#A09880; margin:0 0 20px 0; padding-bottom:10px; border-bottom:1px solid #EDE9E1; }
+.person-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:24px; margin-top:4px; }
+.person-card { display:flex; flex-direction:column; align-items:center; gap:10px; background:transparent; border:none; padding:8px 0; }
+.person-thumb { width:110px; height:110px; border-radius:50%; object-fit:cover; display:block; border:3.5px solid #3D4535; }
+.person-placeholder { width:110px; height:110px; border-radius:50%; background:#EDE9E1; border:3.5px solid #3D4535; display:flex; align-items:center; justify-content:center; font-size:36px; }
+.person-name { font-size:12px; color:#3A3530; font-weight:500; text-align:center; line-height:1.3; }
+.person-badge { font-size:10px; color:#8A7860; font-weight:600; background:#EDE8DF; padding:2px 8px; border-radius:10px; }
+.idle-box { text-align:center; padding:56px 24px; background:#FFFFFF; border:1px solid #E8E4DC; border-radius:14px; margin-bottom:16px; }
+.idle-box-icon { font-size:44px; margin-bottom:14px; }
+.idle-box-title { font-family:'DM Serif Display',serif; font-size:20px; color:#3A3530; margin:0 0 8px 0; }
+.idle-box-sub { font-size:13px; color:#9E9890; margin:0; line-height:1.6; }
+.tip-box { background:#F9F5EE; border:1px solid #DDD0B8; border-radius:10px; padding:14px 18px; margin-top:16px; }
+.tip-box-title { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#8A7860; margin:0 0 8px 0; }
+.tip-box-body { font-size:12px; color:#6E6860; line-height:1.8; margin:0; }
+.tip-box-body code { background:#EDE8DF; padding:1px 6px; border-radius:4px; font-size:11px; color:#6A5E4A; }
+.stProgress > div > div > div > div { background:linear-gradient(90deg,#C4A882,#A88A65) !important; border-radius:4px !important; }
+.stProgress > div > div > div { background:#EDE9E1 !important; border-radius:4px !important; }
+.theme-badge { font-size:11px; color:#A09880; text-align:center; padding-top:8px; }
+</style>
+"""
 
-[data-testid="stSidebar"] {
-    background-color: #FFFFFF !important;
-    border-right: 1px solid #E8E4DC !important;
-}
+DARK_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap');
 
-.sidebar-brand {
-    display: flex; align-items: center; gap: 12px;
-    padding-bottom: 18px; margin-bottom: 18px;
-    border-bottom: 1px solid #EDE9E1;
+html, body, [class*="css"], .stApp {
+    font-family: 'Inter', sans-serif !important;
+    background-color: #0C1822 !important;
+    color: #DFF0F6 !important;
 }
-.sidebar-brand-icon {
-    width: 36px; height: 36px; background: #F0EBE0;
-    border-radius: 10px; display: flex; align-items: center;
-    justify-content: center; font-size: 18px; flex-shrink: 0;
-}
-.sidebar-brand-title { font-family: 'DM Serif Display', serif; font-size: 17px; color: #1C1C1C; }
-.sidebar-brand-sub { font-size: 11px; color: #9E9890; margin-top: 1px; }
-
-.section-label {
-    font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-    color: #A09880; margin: 16px 0 8px 0; padding-bottom: 7px; border-bottom: 1px solid #EDE9E1;
-}
-
-.stTextInput > label { color: #6E6860 !important; font-size: 12px !important; font-weight: 500 !important; }
-.stTextInput > div > div > input {
-    background: #FAF8F4 !important; border: 1px solid #DDD9D0 !important;
-    border-radius: 8px !important; color: #1C1C1C !important; font-size: 13px !important;
-}
-.stTextInput > div > div > input:focus {
-    border-color: #C4A882 !important; box-shadow: 0 0 0 3px rgba(196,168,130,.12) !important;
-}
-
-.stSlider > label { color: #6E6860 !important; font-size: 12px !important; font-weight: 500 !important; }
-.stSlider [data-baseweb="slider"] div[role="slider"] {
-    background-color: #C4A882 !important; border-color: #C4A882 !important;
-}
-
-.stButton > button {
-    width: 100% !important; background: #1C1C1C !important; color: #FFFFFF !important;
-    border: none !important; border-radius: 8px !important; font-weight: 500 !important;
-    font-size: 13px !important; padding: .7rem 1rem !important;
-    letter-spacing: .04em !important; margin-top: 6px !important;
-}
-.stButton > button:hover { background: #3A3530 !important; }
-.stButton > button:disabled { background: #D5D0C8 !important; color: #A09880 !important; }
-
-.main-header {
-    background: #FFFFFF; border: 1px solid #E8E4DC; border-radius: 14px;
-    padding: 22px 28px; display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 20px;
-}
-.main-header-title {
-    font-family: 'DM Serif Display', serif; font-size: 26px;
-    color: #1C1C1C; letter-spacing: -.4px; margin: 0;
-}
-.main-header-title span { color: #C4A882; }
-.main-header-sub { margin: 5px 0 0 0; color: #9E9890; font-size: 13px; }
-.main-header-badge {
-    background: #F5F0E8; border: 1px solid #E0D8CB; color: #8A7860;
-    border-radius: 20px; padding: 5px 14px; font-size: 11px; font-weight: 500;
-}
-
-.stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
-.stat-card {
-    background: #FFFFFF; border: 1px solid #E8E4DC; border-radius: 12px;
-    padding: 18px 16px; text-align: center;
-}
-.stat-card.hl { background: #F9F5EE; border-color: #DDD0B8; }
-.stat-icon { font-size: 20px; margin-bottom: 6px; }
-.stat-value {
-    font-size: 28px; font-weight: 300; color: #1C1C1C;
-    line-height: 1; margin-bottom: 5px; font-family: 'DM Serif Display', serif;
-}
-.stat-value.warm { color: #C4A882; }
-.stat-label { font-size: 11px; color: #9E9890; font-weight: 500; letter-spacing: .03em; text-transform: uppercase; }
-
-.section-card {
-    background: #FFFFFF; border: 1px solid #E8E4DC;
-    border-radius: 12px; padding: 24px 22px; margin-bottom: 16px;
-}
-.section-card-title {
-    font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-    color: #A09880; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 1px solid #EDE9E1;
-}
-
-.person-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 24px;
-    margin-top: 4px;
-}
-.person-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    background: transparent;
-    border: none;
-    padding: 8px 0;
-}
-.person-thumb {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    object-fit: cover;
-    display: block;
-    border: 3.5px solid #3D4535;
-}
-.person-placeholder {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    background: #EDE9E1;
-    border: 3px solid #C8BBA8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-}
-.person-name {
-    font-size: 12px; color: #3A3530; font-weight: 500;
-    text-align: center; line-height: 1.3;
-}
-.person-badge {
-    font-size: 10px; color: #8A7860; font-weight: 600;
-    background: #EDE8DF; padding: 2px 8px; border-radius: 10px;
-}
-
-.idle-box {
-    text-align: center; padding: 56px 24px; background: #FFFFFF;
-    border: 1px solid #E8E4DC; border-radius: 14px; margin-bottom: 16px;
-}
-.idle-box-icon { font-size: 44px; margin-bottom: 14px; }
-.idle-box-title {
-    font-family: 'DM Serif Display', serif; font-size: 20px;
-    color: #3A3530; margin: 0 0 8px 0;
-}
-.idle-box-sub { font-size: 13px; color: #9E9890; margin: 0; line-height: 1.6; }
-
-.tip-box {
-    background: #F9F5EE; border: 1px solid #DDD0B8;
-    border-radius: 10px; padding: 14px 18px; margin-top: 16px;
-}
-.tip-box-title {
-    font-size: 10px; font-weight: 600; letter-spacing: .1em;
-    text-transform: uppercase; color: #8A7860; margin: 0 0 8px 0;
-}
-.tip-box-body { font-size: 12px; color: #6E6860; line-height: 1.8; margin: 0; }
-.tip-box-body code {
-    background: #EDE8DF; padding: 1px 6px;
-    border-radius: 4px; font-size: 11px; color: #6A5E4A;
-}
-
-.stProgress > div > div > div > div {
-    background: linear-gradient(90deg,#C4A882,#A88A65) !important; border-radius: 4px !important;
-}
-.stProgress > div > div > div {
-    background: #EDE9E1 !important; border-radius: 4px !important;
-}
+#MainMenu, footer, header { visibility: hidden; }
+.block-container { padding-top: 1.6rem !important; padding-bottom: 3rem !important; }
+[data-testid="stSidebar"] { background-color: #081017 !important; border-right:1px solid #172D3E !important; }
+.sidebar-brand { display:flex; align-items:center; gap:12px; padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid #172D3E; }
+.sidebar-brand-icon { width:36px; height:36px; background:rgba(0,196,218,.12); border:1px solid rgba(0,196,218,.25); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.sidebar-brand-title { font-family:'DM Serif Display',serif; font-size:17px; color:#00C4DA; }
+.sidebar-brand-sub { font-size:11px; color:#4A7888; margin-top:1px; }
+.section-label { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#4A7888; margin:16px 0 8px 0; padding-bottom:7px; border-bottom:1px solid #172D3E; }
+.stTextInput > label { color:#7AAABB !important; font-size:12px !important; font-weight:500 !important; }
+.stTextInput > div > div > input { background:#0F2030 !important; border:1px solid #173040 !important; border-radius:8px !important; color:#DFF0F6 !important; font-size:13px !important; }
+.stTextInput > div > div > input:focus { border-color:#00C4DA !important; box-shadow:0 0 0 2px rgba(0,196,218,.14) !important; }
+.stSlider > label { color:#7AAABB !important; font-size:12px !important; font-weight:500 !important; }
+.stSlider [data-baseweb="slider"] div[role="slider"] { background-color:#00C4DA !important; border-color:#00C4DA !important; }
+.stButton > button { width:100% !important; background:linear-gradient(135deg,#00C4DA,#0094AB) !important; color:#fff !important; border:none !important; border-radius:8px !important; font-weight:600 !important; font-size:13px !important; padding:.7rem 1rem !important; margin-top:6px !important; }
+.stButton > button:hover { background:linear-gradient(135deg,#1AD6EC,#00AECA) !important; }
+.stButton > button:disabled { background:#172D3E !important; color:#365060 !important; }
+.main-header { background:#0F2030; border:1px solid #172D3E; border-radius:14px; padding:22px 28px; display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.main-header-title { font-family:'DM Serif Display',serif; font-size:26px; color:#DFF0F6; letter-spacing:-.4px; margin:0; }
+.main-header-title span { color:#00C4DA; }
+.main-header-sub { margin:5px 0 0 0; color:#4A7888; font-size:13px; }
+.main-header-badge { background:rgba(0,196,218,.12); border:1px solid rgba(0,196,218,.25); color:#00C4DA; border-radius:20px; padding:5px 14px; font-size:11px; font-weight:600; }
+.stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.stat-card { background:#0F2030; border:1px solid #172D3E; border-radius:12px; padding:18px 16px; text-align:center; }
+.stat-card.hl { background:rgba(0,196,218,.07); border-color:rgba(0,196,218,.4); }
+.stat-icon { font-size:20px; margin-bottom:6px; }
+.stat-value { font-size:28px; font-weight:300; color:#DFF0F6; line-height:1; margin-bottom:5px; font-family:'DM Serif Display',serif; }
+.stat-value.warm { color:#00C4DA; }
+.stat-label { font-size:11px; color:#4A7888; font-weight:500; letter-spacing:.03em; text-transform:uppercase; }
+.section-card { background:#0F2030; border:1px solid #172D3E; border-radius:12px; padding:24px 22px; margin-bottom:16px; }
+.section-card-title { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#4A7888; margin:0 0 20px 0; padding-bottom:10px; border-bottom:1px solid #172D3E; }
+.person-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:24px; margin-top:4px; }
+.person-card { display:flex; flex-direction:column; align-items:center; gap:10px; background:transparent; border:none; padding:8px 0; }
+.person-thumb { width:110px; height:110px; border-radius:50%; object-fit:cover; display:block; border:3.5px solid #00C4DA; }
+.person-placeholder { width:110px; height:110px; border-radius:50%; background:#0F2030; border:3.5px solid #00C4DA; display:flex; align-items:center; justify-content:center; font-size:36px; }
+.person-name { font-size:12px; color:#BCDCE8; font-weight:500; text-align:center; line-height:1.3; }
+.person-badge { font-size:10px; color:#00C4DA; font-weight:600; background:rgba(0,196,218,.1); padding:2px 8px; border-radius:10px; }
+.idle-box { text-align:center; padding:56px 24px; background:#0F2030; border:1px solid #172D3E; border-radius:14px; margin-bottom:16px; }
+.idle-box-icon { font-size:44px; margin-bottom:14px; }
+.idle-box-title { font-family:'DM Serif Display',serif; font-size:20px; color:#DFF0F6; margin:0 0 8px 0; }
+.idle-box-sub { font-size:13px; color:#4A7888; margin:0; line-height:1.6; }
+.tip-box { background:rgba(0,196,218,.06); border:1px solid rgba(0,196,218,.2); border-radius:10px; padding:14px 18px; margin-top:16px; }
+.tip-box-title { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#00C4DA; margin:0 0 8px 0; }
+.tip-box-body { font-size:12px; color:#7AAABB; line-height:1.8; margin:0; }
+.tip-box-body code { background:rgba(0,196,218,.12); padding:1px 6px; border-radius:4px; font-size:11px; color:#00C4DA; }
+.stProgress > div > div > div > div { background:linear-gradient(90deg,#00C4DA,#0094AB) !important; border-radius:4px !important; }
+.stProgress > div > div > div { background:#172D3E !important; border-radius:4px !important; }
+.theme-badge { font-size:11px; color:#4A7888; text-align:center; padding-top:8px; }
 </style>
 """
 
@@ -203,9 +151,7 @@ def make_person_card(folder_info):
     count = folder_info["count"]
     thumb_path = folder_info.get("thumbnail")
     label = str(count) + (" photos" if count != 1 else " photo")
-
     b64 = thumbnail_to_b64(thumb_path) if thumb_path else None
-
     card = '<div class="person-card">'
     if b64:
         card += '<img class="person-thumb" src="data:image/jpeg;base64,' + b64 + '" alt="' + name + '">'
@@ -254,6 +200,9 @@ def render_sidebar():
         st.markdown("<br>", unsafe_allow_html=True)
         run = st.button("Sort Photos ->", disabled=st.session_state.get("running", False))
 
+        theme_label = "🌙 Night mode" if is_dark else "☀️ Day mode"
+        st.markdown('<div class="theme-badge">' + theme_label + '</div>', unsafe_allow_html=True)
+
     return {
         "run": run,
         "config": {
@@ -288,7 +237,7 @@ def render_results(r):
         cards_html += make_person_card(folder_info)
     if len(r["person_folders"]) > 60:
         extra = len(r["person_folders"]) - 60
-        cards_html += '<div class="person-card"><div class="person-placeholder" style="font-size:12px;color:#A09880;">+' + str(extra) + ' more</div></div>'
+        cards_html += '<div class="person-card"><div class="person-placeholder" style="font-size:12px;">+' + str(extra) + ' more</div></div>'
     cards_html += "</div></div>"
     st.markdown(cards_html, unsafe_allow_html=True)
 
@@ -329,7 +278,7 @@ def render_idle():
 
 
 def main():
-    st.markdown(PICTIME_CSS, unsafe_allow_html=True)
+    st.markdown(DARK_CSS if is_dark else LIGHT_CSS, unsafe_allow_html=True)
 
     if "results" not in st.session_state:
         st.session_state.results = None
