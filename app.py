@@ -133,9 +133,7 @@ html, body, [class*="css"], .stApp {
     border-radius: 50%;
     object-fit: cover;
     display: block;
-    border: 3px solid #C8BBA8;
-    outline: 4px solid #FFFFFF;
-    outline-offset: -7px;
+    border: 3.5px solid #3D4535;
 }
 .person-placeholder {
     width: 110px;
