@@ -325,8 +325,8 @@ html, body, [class*="css"], .stApp {
 
 /* ── Radio as mode tabs ── */
 div[data-testid="stRadio"] > label { display:none !important; }
-div[data-testid="stRadio"] > div {
-    display:grid !important; grid-template-columns:repeat(4,1fr) !important;
+div[data-testid="stRadio"] > div > label > div:last-child {
+    white-space:nowrap !important;
     gap:5px !important; background:transparent !important;
 }
 div[data-testid="stRadio"] > div > label {
