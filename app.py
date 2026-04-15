@@ -115,31 +115,34 @@ html, body, [class*="css"], .stApp {
 .person-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
+    gap: 16px;
     margin-top: 4px;
 }
 .person-card {
     background: #FAF8F4; border: 1px solid #E8E4DC;
-    border-radius: 10px; overflow: hidden;
+    border-radius: 12px; overflow: hidden;
     display: flex; flex-direction: column; align-items: center;
-    padding-bottom: 10px;
+    padding: 16px 12px 12px 12px;
 }
 .person-card:hover { border-color: #C4A882; }
 .person-thumb {
-    width: 100%; aspect-ratio: 1;
+    width: 90px; height: 90px;
     object-fit: cover; display: block;
     background: #EDE9E1;
+    border-radius: 50%;
+    margin-bottom: 10px;
 }
 .person-placeholder {
-    width: 100%; padding-top: 100%; background: #EDE9E1; position: relative;
-}
-.person-placeholder-icon {
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%); font-size: 32px;
+    width: 90px; height: 90px;
+    background: #EDE9E1;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    margin-bottom: 10px;
 }
 .person-name {
     font-size: 11px; color: #3A3530; font-weight: 500;
-    margin: 8px 0 4px 0; text-align: center;
+    margin: 0 0 5px 0; text-align: center;
 }
 .person-badge {
     font-size: 10px; color: #8A7860; font-weight: 600;
@@ -195,16 +198,13 @@ def make_person_card(folder_info):
     thumb_path = folder_info.get("thumbnail")
     label = str(count) + (" photos" if count != 1 else " photo")
 
-    if thumb_path:
-        b64 = thumbnail_to_b64(thumb_path)
-    else:
-        b64 = None
+    b64 = thumbnail_to_b64(thumb_path) if thumb_path else None
 
     card = '<div class="person-card">'
     if b64:
         card += '<img class="person-thumb" src="data:image/jpeg;base64,' + b64 + '" alt="' + name + '">'
     else:
-        card += '<div class="person-placeholder"><span class="person-placeholder-icon">👤</span></div>'
+        card += '<div class="person-placeholder">👤</div>'
     card += '<div class="person-name">' + name + "</div>"
     card += '<div class="person-badge">' + label + "</div>"
     card += "</div>"
