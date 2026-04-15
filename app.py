@@ -276,14 +276,14 @@ def render_results(r: dict):
 
     cards_html = '<div class="person-grid">'
     for f in r['person_folders'][:60]:
-        if f.get('thumbnail'):
+if f.get('thumbnail'):
             b64 = thumbnail_to_b64(f['thumbnail'])
             if b64:
                 img_tag = f'<img class="person-thumb" src="data:image/jpeg;base64,{b64}" alt="{f["name"]}">'
             else:
-                img_tag = '<div class="person-thumb-placeholder">👤</div>'
+                img_tag = '<div class="person-thumb-placeholder" style="width:100%;aspect-ratio:1;background:#EDE9E1;display:flex;align-items:center;justify-content:center;font-size:32px;">👤</div>'
         else:
-            img_tag = '<div class="person-thumb-placeholder">👤</div>'
+            img_tag = '<div class="person-thumb-placeholder" style="width:100%;aspect-ratio:1;background:#EDE9E1;display:flex;align-items:center;justify-content:center;font-size:32px;">👤</div>'
 
         cards_html += f"""
             <div class="person-card">
