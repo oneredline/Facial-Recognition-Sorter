@@ -183,7 +183,7 @@ html, body, [class*="css"], .stApp {
 """
 
 
-def thumbnail_to_b64(path: str) -> str | None:
+def thumbnail_to_b64(path: str):
     try:
         with open(path, 'rb') as f:
             return base64.b64encode(f.read()).decode('utf-8')
