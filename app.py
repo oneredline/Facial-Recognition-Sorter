@@ -112,7 +112,6 @@ html, body, [class*="css"], .stApp {
     color: #A09880; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 1px solid #EDE9E1;
 }
 
-/* ── Pic-Time style person grid ── */
 .person-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -128,28 +127,22 @@ html, body, [class*="css"], .stApp {
     border: none;
     padding: 8px 0;
 }
-.person-ring {
+.person-thumb {
     width: 110px;
     height: 110px;
     border-radius: 50%;
-    border: 2.5px solid #C8BBA8;
-    padding: 4px;
-    background: #FFFFFF;
-    flex-shrink: 0;
-}
-.person-thumb {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
     object-fit: cover;
     display: block;
-    background: #EDE9E1;
+    border: 3px solid #C8BBA8;
+    outline: 4px solid #FFFFFF;
+    outline-offset: -7px;
 }
 .person-placeholder {
-    width: 100%;
-    height: 100%;
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
     background: #EDE9E1;
+    border: 3px solid #C8BBA8;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -216,12 +209,10 @@ def make_person_card(folder_info):
     b64 = thumbnail_to_b64(thumb_path) if thumb_path else None
 
     card = '<div class="person-card">'
-    card += '<div class="person-ring">'
     if b64:
         card += '<img class="person-thumb" src="data:image/jpeg;base64,' + b64 + '" alt="' + name + '">'
     else:
         card += '<div class="person-placeholder">👤</div>'
-    card += '</div>'
     card += '<div class="person-name">' + name + "</div>"
     card += '<div class="person-badge">' + label + "</div>"
     card += "</div>"
@@ -299,7 +290,7 @@ def render_results(r):
         cards_html += make_person_card(folder_info)
     if len(r["person_folders"]) > 60:
         extra = len(r["person_folders"]) - 60
-        cards_html += '<div class="person-card"><div class="person-ring" style="background:#F5F0E8;display:flex;align-items:center;justify-content:center;"><span style="color:#A09880;font-size:12px;text-align:center;">+' + str(extra) + ' more</span></div></div>'
+        cards_html += '<div class="person-card"><div class="person-placeholder" style="font-size:12px;color:#A09880;">+' + str(extra) + ' more</div></div>'
     cards_html += "</div></div>"
     st.markdown(cards_html, unsafe_allow_html=True)
 
